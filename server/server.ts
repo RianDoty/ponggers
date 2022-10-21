@@ -1,4 +1,5 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
+import { Server } from "socket.io";
 const path = require("path");
 const app = express();
 const http = require("http").Server(app);
