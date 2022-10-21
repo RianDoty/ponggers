@@ -1,0 +1,21 @@
+{
+  "extends": "@tsconfig/node16/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "target": "ES6",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "server",
+    "src/room-socket-types.d.ts",
+    "src/socket-types.d.ts",
+    "babel.config.js"
+, "src/jest.config.js"  ],
+  "exclude": [
+    "node_modules",
+    "src"
+  ]
+}
