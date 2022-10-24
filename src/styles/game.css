@@ -1,0 +1,72 @@
+#man1, #man2, #table {
+    position:absolute;
+}
+
+.hit-bar {
+    position: absolute;
+    display: flex;
+    width: 200px;
+    max-width: 40%;
+    bottom: 5px;
+    left: 20px;
+    aspect-ratio: 10/1;
+}
+
+.hit-bar.flipped {
+    flex-direction: row-reverse;
+    left:auto;
+    right: 20px;
+}
+
+.hit-bar-green, .hit-bar-yellow, .hit-bar-red {
+    height: 100%;
+}
+
+.hit-bar-green {
+    flex-basis: 15%;
+    background-color: green;
+}
+
+.hit-bar-yellow {
+    flex-basis: 30%;
+    background-color: yellow;
+}
+
+.hit-bar-red {
+    flex-grow: 1;
+    background-color: red;
+}
+
+#game {
+    position: relative;
+    width: 75%;
+    background: rgba(255, 0, 247, 0.164);
+    aspect-ratio: 2/1;
+}
+
+#game #man1 {
+    height: 75%;
+    left: 20px;
+    top: 12.5%
+}
+
+#game #man2 {
+    height: 75%;
+    right: 20px;
+    top: 12.5%;
+    transform: scaleX(-1);
+}
+
+#game #table {
+    width: 50%;
+    left: 25%;
+}
+
+.note {
+    position: absolute;
+    height: 75%;
+    top: 12.5%;
+    aspect-ratio: 1/1;
+    background-color: whitesmoke;
+    border-radius: 50%;
+}
