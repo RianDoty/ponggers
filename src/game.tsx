@@ -2,6 +2,7 @@ import React, { ReactNode, useEffect, useRef, useState } from "react";
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
 import "./styles/game.css";
+import { render } from "react-dom";
 
 /** Returns true when two arrays contain equal data in the same order. */
 const arraysEqual = (a: any[], b: any[]) => {
@@ -13,26 +14,44 @@ const arraysEqual = (a: any[], b: any[]) => {
 };
 
 /** Offset from note appearing to when it needs to be hit (ms) */
-const noteOffset = 331.5;
+const noteOffset = 662;
 const greatHitOffset = 20;
+
+/** @returns [renderAbove, renderBelow] */
+const getNoteWindow = () => [Date.now() - 50, Date.now() + noteOffset + 50]
+function getVerdict(noteTimestamp: number) {
+  /** (ms) positive = late, negative = early */
+  const difference = Date.now() - noteTimestamp
+  console.log(`${Math.abs(difference)}ms ${difference > 0 ? 'late': 'early'}`)
+
+  if (Math.abs(difference) <= 50) return 'great' as const
+  if (Math.abs(difference) <= 100) return 'good' as const
+  if (difference < 100) return 'early' as const
+  if (difference > 100) return 'late' as const
+  return 'miss' as const
+}
 
 const Note = ({ pos }: { pos: number }) => (
   <div className="note" style={{ left: `${(1 - pos) * 100}%` }} />
 );
 
 function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
+  const upcomingNotesRef = useRef<number[]>()
   const [renderedNotes, setRenderedNotes] = useState<number[]>([]);
   const [frame, setFrame] = useState(0);
   const animateRef = useRef<number>(0);
+  const [verdict, setVerdict] = useState<string>()
 
   function animate() {
-    const renderBelow = Date.now() + noteOffset + 50;
-    const renderAbove = Date.now() - 50;
+    //Render notes that are within the window defined by noteOffset
+    //+-50 to make sure the notes can slide in and out from the sides
+    const [renderAbove, renderBelow] = getNoteWindow()
 
-    const toRender: number[] = [];
-    notes.forEach((t) => {
-      if (renderAbove < t && t < renderBelow) toRender.push(t);
-    });
+    const upcoming = upcomingNotesRef.current
+    //Render notes within the defined window
+    const toRender: number[] = upcoming?.filter(t => renderBelow > t && t > renderAbove) ?? [];
+    //Remove notes that have already been fully played out
+    upcomingNotesRef.current = upcoming?.filter(t => t > renderAbove)
 
     let currentSize = 0;
     setRenderedNotes((currentlyRendered) => {
@@ -49,9 +68,26 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
   }
 
   useEffect(() => {
+    upcomingNotesRef.current = [...notes] //No side effects
     animateRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animateRef.current);
   }, [notes]);
+
+  //Hit Registration
+  useEffect(() => {
+    function onKeyDown(ev: KeyboardEvent) {
+      const note = upcomingNotesRef.current?.[0]
+      const [hitAbove, hitBelow] = getNoteWindow();
+
+      if (note && hitAbove < note && note < hitBelow) {
+        upcomingNotesRef.current!.shift()
+        setVerdict(getVerdict(note))
+      } else setVerdict('miss')
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   const noteComponents = renderedNotes.map((nTime) => {
     const pos = (Date.now() - nTime + noteOffset + greatHitOffset) / noteOffset;
@@ -60,21 +96,24 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
 
   const divClass = `hit-bar${flip ? " flipped" : ""}` as const;
   return (
-    <div className={divClass}>
-      <div className="hit-bar-green" />
-      <div className="hit-bar-yellow" />
-      <div className="hit-bar-red" />
-      {noteComponents}
-    </div>
+    <>
+      {verdict}
+      <div className={divClass}>
+        <div className="hit-bar-green" />
+        <div className="hit-bar-yellow" />
+        <div className="hit-bar-red" />
+        {noteComponents}
+      </div>
+    </>
   );
 }
 
 export default function Game() {
   const note = (i: number) => Date.now() + 1326 * i;
   const [debugNotes] = useState(() => {
-    const out = [];
+    const out: number[] = [];
     for (let i = 1; i < 100; i++) {
-      out.push(note(i / 5));
+      out.push(note(i));
     }
     return out;
   });

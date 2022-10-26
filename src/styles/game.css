@@ -29,17 +29,17 @@
 
 .hit-bar-green {
   flex-basis: 15%;
-  background-color: green;
+  background-color: #43cf40;
 }
 
 .hit-bar-yellow {
   flex-grow: 1;
-  background-color: rgb(114, 114, 0);
+  background-color: #dbc100;
 }
 
 .hit-bar-red {
   flex-grow: 1;
-  background-color: red;
+  background-color: #e24b00;
 }
 
 #game {
@@ -72,6 +72,6 @@
   height: 75%;
   top: 12.5%;
   aspect-ratio: 1/1;
-  background-color: whitesmoke;
+  background-color: white;
   border-radius: 50%;
 }
