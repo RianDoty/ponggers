@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
-import "../styles/game.css";
+import "./styles/game.css";
 
 /** Returns true when two arrays contain equal data in the same order. */
 const arraysEqual = (a: any[], b: any[]) => {
@@ -60,15 +60,12 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
 
   const divClass = `hit-bar${flip ? " flipped" : ""}` as const;
   return (
-    <>
-      {frame}
-      <div className={divClass}>
-        <div className="hit-bar-green" />
-        <div className="hit-bar-yellow" />
-        <div className="hit-bar-red" />
-        {noteComponents}
-      </div>
-    </>
+    <div className={divClass}>
+      <div className="hit-bar-green" />
+      <div className="hit-bar-yellow" />
+      <div className="hit-bar-red" />
+      {noteComponents}
+    </div>
   );
 }
 

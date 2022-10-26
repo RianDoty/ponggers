@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import reactRefresh from "@vitejs/plugin-react-refresh";
+import reactRefresh from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,10 +8,8 @@ export default defineConfig({
     outDir: "build"
   },
   server: {
-    //strictPort: true,
-    //hmr: {
-    //  port: 443, // Run the websocket server on the SSL port
-    //},
+    strictPort: true,
+    port: 3000,
     proxy: {
       "/api": {
         target: "http://localhost:3001"
