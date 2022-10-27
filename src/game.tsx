@@ -1,8 +1,15 @@
-import React, { ReactNode, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
+
+import rally from '/sounds/rally.mp3'
+import whistle from '/sounds/whistle.mp3'
+import ballhit1 from '/sounds/ballhit1.mp3'
+import ballhit2 from '/sounds/ballhit2.mp3'
+
 import "./styles/game.css";
-import { render } from "react-dom";
+
 
 /** Returns true when two arrays contain equal data in the same order. */
 const arraysEqual = (a: any[], b: any[]) => {
@@ -83,10 +90,12 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
     function onKeyDown(ev: KeyboardEvent) {
       if (ev.repeat) return;
 
+
       const note = upcomingNotesRef.current?.[0];
+      if (!note) return setVerdict('miss');
 
       const difference = Date.now() - note;
-      if (note && Math.abs(difference) < 200) {
+      if (Math.abs(difference) < 200) {
         upcomingNotesRef.current!.shift();
         setVerdict(`${getVerdict(note)} (${Date.now() - note}ms)`);
       } else setVerdict("miss");
@@ -115,6 +124,7 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
   );
 }
 
+//Manages the visuals associated with the game, and also sounds!
 function GameVisual() {
   return (
     <div>
@@ -125,7 +135,26 @@ function GameVisual() {
   );
 }
 
+function StartPopup({ isLoaded, onConfirm }: { isLoaded: boolean, onConfirm: React.MouseEventHandler<HTMLButtonElement> }) {
+  return (
+    <div className="screen-popup">
+      {isLoaded ? <button onClick={onConfirm}>Start</button> : <h1>Loading...</h1>}
+    </div>
+  )
+}
+
 export default function Game() {
+  const [gameStarted, setGameStarted] = useState(false)
+  const [musicLoaded, setMusicLoaded] = useState(false)
+
+  const startGame: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    if (gameStarted) return;
+
+    
+
+    setGameStarted(true)
+  }
+
   const note = (i: number) => Date.now() + 1326 * i;
   const [debugNotes] = useState(() => {
     const out: number[] = [];
@@ -136,9 +165,12 @@ export default function Game() {
   });
 
   return (
-    <div id="game">
-      <GameVisual />
-      <HitBar notes={debugNotes} />
-    </div>
+    <>
+      {gameStarted?null: <StartPopup isLoaded={musicLoaded} onConfirm={startGame}/>}
+      <div id="game">
+        <GameVisual />
+        <HitBar notes={debugNotes} />
+      </div>
+    </>
   );
 }
