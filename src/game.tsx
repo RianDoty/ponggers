@@ -18,17 +18,17 @@ const noteOffset = 662;
 const greatHitOffset = 20;
 
 /** @returns [renderAbove, renderBelow] */
-const getNoteWindow = () => [Date.now() - 50, Date.now() + noteOffset + 50]
+const getNoteWindow = () => [Date.now() - 50, Date.now() + noteOffset + 50];
 function getVerdict(noteTimestamp: number) {
   /** (ms) positive = late, negative = early */
-  const difference = Date.now() - noteTimestamp
-  console.log(`${Math.abs(difference)}ms ${difference > 0 ? 'late': 'early'}`)
+  const difference = Date.now() - noteTimestamp;
+  console.log(`${Math.abs(difference)}ms ${difference > 0 ? "late" : "early"}`);
 
-  if (Math.abs(difference) <= 50) return 'great' as const
-  if (Math.abs(difference) <= 100) return 'good' as const
-  if (difference < 100) return 'early' as const
-  if (difference > 100) return 'late' as const
-  return 'miss' as const
+  if (Math.abs(difference) <= 50) return "great" as const;
+  if (Math.abs(difference) <= 100) return "good" as const;
+  if (difference < 100) return "early" as const;
+  if (difference > 100) return "late" as const;
+  return "miss" as const;
 }
 
 const Note = ({ pos }: { pos: number }) => (
@@ -36,22 +36,27 @@ const Note = ({ pos }: { pos: number }) => (
 );
 
 function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
-  const upcomingNotesRef = useRef<number[]>()
+  const upcomingNotesRef = useRef<number[]>();
   const [renderedNotes, setRenderedNotes] = useState<number[]>([]);
   const [frame, setFrame] = useState(0);
   const animateRef = useRef<number>(0);
-  const [verdict, setVerdict] = useState<string>()
+  const [verdict, setVerdict] = useState<string>();
 
   function animate() {
     //Render notes that are within the window defined by noteOffset
     //+-50 to make sure the notes can slide in and out from the sides
-    const [renderAbove, renderBelow] = getNoteWindow()
+    const [renderAbove, renderBelow] = getNoteWindow();
 
-    const upcoming = upcomingNotesRef.current
+    const upcoming = upcomingNotesRef.current;
     //Render notes within the defined window
-    const toRender: number[] = upcoming?.filter(t => renderBelow > t && t > renderAbove) ?? [];
+    const toRender: number[] =
+      upcoming?.filter((t) => renderBelow > t && t > renderAbove) ?? [];
     //Remove notes that have already been fully played out
-    upcomingNotesRef.current = upcoming?.filter(t => t > renderAbove)
+    upcomingNotesRef.current = upcoming?.filter((t) => {
+      const noteMissed = t < Date.now() - 200;
+      if (noteMissed) setVerdict("late");
+      return !noteMissed;
+    });
 
     let currentSize = 0;
     setRenderedNotes((currentlyRendered) => {
@@ -68,7 +73,7 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
   }
 
   useEffect(() => {
-    upcomingNotesRef.current = [...notes] //No side effects
+    upcomingNotesRef.current = [...notes]; //No side effects
     animateRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animateRef.current);
   }, [notes]);
@@ -76,18 +81,20 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
   //Hit Registration
   useEffect(() => {
     function onKeyDown(ev: KeyboardEvent) {
-      const note = upcomingNotesRef.current?.[0]
-      const [hitAbove, hitBelow] = getNoteWindow();
+      if (ev.repeat) return;
 
-      if (note && hitAbove < note && note < hitBelow) {
-        upcomingNotesRef.current!.shift()
-        setVerdict(getVerdict(note))
-      } else setVerdict('miss')
+      const note = upcomingNotesRef.current?.[0];
+
+      const difference = Date.now() - note;
+      if (note && Math.abs(difference) < 200) {
+        upcomingNotesRef.current!.shift();
+        setVerdict(`${getVerdict(note)} (${Date.now() - note}ms)`);
+      } else setVerdict("miss");
     }
 
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const noteComponents = renderedNotes.map((nTime) => {
     const pos = (Date.now() - nTime + noteOffset + greatHitOffset) / noteOffset;
@@ -108,6 +115,16 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
   );
 }
 
+function GameVisual() {
+  return (
+    <div>
+      <img src={pingPongMan} id="man1" alt="man playing ping pong" />
+      <img src={pingPongMan} id="man2" alt="man playing ping pong" />
+      <img src={table} id="table" alt="ping pong table" />
+    </div>
+  );
+}
+
 export default function Game() {
   const note = (i: number) => Date.now() + 1326 * i;
   const [debugNotes] = useState(() => {
@@ -120,9 +137,7 @@ export default function Game() {
 
   return (
     <div id="game">
-      <img src={pingPongMan} id="man1" alt="man playing ping pong" />
-      <img src={pingPongMan} id="man2" alt="man playing ping pong" />
-      <img src={table} id="table" alt="ping pong table" />
+      <GameVisual />
       <HitBar notes={debugNotes} />
     </div>
   );

@@ -16,7 +16,6 @@ export default defineConfig({
       },
 
       "/socket.io": {
-        //Express/socket.io server runs at 3001
         target: "ws://localhost:3001",
         ws: true
       }
