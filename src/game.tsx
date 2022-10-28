@@ -10,6 +10,10 @@ import ballhit2 from '/sounds/ballhit2.mp3'
 
 import "./styles/game.css";
 
+const rallymusic = new Audio(rally)
+const whistlesfx = new Audio(whistle)
+const ballhit1sfx = new Audio(ballhit1)
+const ballhit2sfx = new Audio(ballhit2)
 
 /** Returns true when two arrays contain equal data in the same order. */
 const arraysEqual = (a: any[], b: any[]) => {
@@ -147,10 +151,12 @@ export default function Game() {
   const [gameStarted, setGameStarted] = useState(false)
   const [musicLoaded, setMusicLoaded] = useState(false)
 
+  //Music loading
+
   const startGame: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     if (gameStarted) return;
 
-    
+    //thisisneat
 
     setGameStarted(true)
   }
