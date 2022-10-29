@@ -3,17 +3,17 @@ import React, { useEffect, useRef, useState } from "react";
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
 
-import rally from '/sounds/rally.mp3'
-import whistle from '/sounds/whistle.mp3'
-import ballhit1 from '/sounds/ballhit1.mp3'
-import ballhit2 from '/sounds/ballhit2.mp3'
+import rally from "/sounds/rally.mp3";
+import whistle from "/sounds/whistle.mp3";
+import ballhit1 from "/sounds/ballhit1.mp3";
+import ballhit2 from "/sounds/ballhit2.mp3";
 
 import "./styles/game.css";
 
-const rallymusic = new Audio(rally)
-const whistlesfx = new Audio(whistle)
-const ballhit1sfx = new Audio(ballhit1)
-const ballhit2sfx = new Audio(ballhit2)
+const rallymusic = new Audio(rally);
+const whistlesfx = new Audio(whistle);
+const ballhit1sfx = new Audio(ballhit1);
+const ballhit2sfx = new Audio(ballhit2);
 
 /** Returns true when two arrays contain equal data in the same order. */
 const arraysEqual = (a: any[], b: any[]) => {
@@ -94,9 +94,8 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
     function onKeyDown(ev: KeyboardEvent) {
       if (ev.repeat) return;
 
-
       const note = upcomingNotesRef.current?.[0];
-      if (!note) return setVerdict('miss');
+      if (!note) return setVerdict("miss");
 
       const difference = Date.now() - note;
       if (Math.abs(difference) < 200) {
@@ -139,27 +138,44 @@ function GameVisual() {
   );
 }
 
-function StartPopup({ isLoaded, onConfirm }: { isLoaded: boolean, onConfirm: React.MouseEventHandler<HTMLButtonElement> }) {
+function StartPopup({
+  isLoaded,
+  onConfirm
+}: {
+  isLoaded: boolean;
+  onConfirm: React.MouseEventHandler<HTMLButtonElement>;
+}) {
   return (
     <div className="screen-popup">
-      {isLoaded ? <button onClick={onConfirm}>Start</button> : <h1>Loading...</h1>}
+      <div>
+        {isLoaded ? (
+          <button onClick={onConfirm}>Start</button>
+        ) : (
+          <h1>Loading...</h1>
+        )}
+      </div>
     </div>
-  )
+  );
 }
 
 export default function Game() {
-  const [gameStarted, setGameStarted] = useState(false)
-  const [musicLoaded, setMusicLoaded] = useState(false)
+  const [gameStarted, setGameStarted] = useState(false);
+  const [musicLoaded, setMusicLoaded] = useState(false);
 
   //Music loading
+  useEffect(() => {
+    if (rallymusic.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
+      return setMusicLoaded(true);
+    rallymusic.oncanplaythrough = () => setMusicLoaded(true);
+  }, []);
 
   const startGame: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     if (gameStarted) return;
 
     //thisisneat
 
-    setGameStarted(true)
-  }
+    setGameStarted(true);
+  };
 
   const note = (i: number) => Date.now() + 1326 * i;
   const [debugNotes] = useState(() => {
@@ -172,7 +188,9 @@ export default function Game() {
 
   return (
     <>
-      {gameStarted?null: <StartPopup isLoaded={musicLoaded} onConfirm={startGame}/>}
+      {gameStarted ? null : (
+        <StartPopup isLoaded={musicLoaded} onConfirm={startGame} />
+      )}
       <div id="game">
         <GameVisual />
         <HitBar notes={debugNotes} />
