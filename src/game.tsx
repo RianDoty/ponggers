@@ -9,6 +9,7 @@ import ballhit1 from "/sounds/ballhit1.mp3";
 import ballhit2 from "/sounds/ballhit2.mp3";
 
 import "./styles/game.css";
+import Ping from "./ping";
 
 const rallymusic = new Audio(rally);
 const whistlesfx = new Audio(whistle);
@@ -131,9 +132,9 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
 function GameVisual() {
   return (
     <div>
-      <img src={pingPongMan} id="man1" alt="man playing ping pong" />
-      <img src={pingPongMan} id="man2" alt="man playing ping pong" />
-      <img src={table} id="table" alt="ping pong table" />
+      <img src={pingPongMan} id="man1" alt="man playing ping pong" draggable={false} />
+      <img src={pingPongMan} id="man2" alt="man playing ping pong" draggable={false} />
+      <img src={table} id="table" alt="ping pong table" draggable={false} />
     </div>
   );
 }
@@ -188,6 +189,7 @@ export default function Game() {
 
   return (
     <>
+      <Ping/>
       {gameStarted ? null : (
         <StartPopup isLoaded={musicLoaded} onConfirm={startGame} />
       )}

@@ -84,7 +84,21 @@
   right: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-content: center;
+  align-items: center;
   justify-content: center;
   z-index: 999;
+}
+
+.screen-popup button {
+  width:100px;
+  height: 50px;
+  font-size: 2rem;
+  background-color: #43cf40;
+  color: white;
+  border: 3px solid gray;
+  border-radius: 2px;
+}
+
+.screen-popup button:hover {
+  background-color: #3ab264;
 }

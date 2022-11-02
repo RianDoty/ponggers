@@ -9,6 +9,11 @@ async function createServer() {
   const io = new Server(httpServer);
   const nsp = io.of("/");
 
+  nsp.on('connect', socket => {
+    //Basic ping function
+    socket.on('ping', ack => ack())
+  })
+
   let port = 3001;
   console.log("❇️ NODE_ENV is probably development, idk");
   console.log("⚠️ Running development server");
