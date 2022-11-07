@@ -15,15 +15,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const socket_io_1 = require("socket.io");
 const http_1 = __importDefault(require("http"));
+const matchmaking_1 = __importDefault(require("./matchmaking"));
+const match_1 = __importDefault(require("./match"));
 function createServer() {
     return __awaiter(this, void 0, void 0, function* () {
         const app = (0, express_1.default)();
         const httpServer = http_1.default.createServer(app);
         const io = new socket_io_1.Server(httpServer);
         const nsp = io.of("/");
+        const matchmaker = new matchmaking_1.default();
+        const matches = new Map();
+        matchmaker.onMatch((sockets) => {
+            console.log('Match recieved.');
+            const match = new match_1.default(sockets);
+            matches.set(match.id, match);
+            match.start();
+        });
         nsp.on('connect', socket => {
             //Basic ping function
             socket.on('ping', ack => ack());
+            //Start the socket's matchmaking
+            matchmaker.addSocket(socket);
         });
         let port = 3001;
         console.log("❇️ NODE_ENV is probably development, idk");
