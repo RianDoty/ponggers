@@ -1,27 +1,27 @@
 import React, { useEffect, useState } from 'react'
-import io from 'socket.io-client'
+import socket from './socket'
 
 /** A small text display that shows the current latency. */
 export default function Ping() {
-    const [ping, setPing] = useState('Loading...')
+    const [ping, setPing] = useState('Ping is loading...')
 
     useEffect(()=>{
-        const socket = io('localhost:3000')
-
+        console.log('Beginning ping.')
         //Check the ping every 2s
-        const interval = setInterval(() => {
+        const updatePing = ()=>{
             const startTime = Date.now()
+
             socket.emit('ping', () => {
                 //Ping signal has returned from server when this code is reached
                 setPing(`${Date.now() - startTime}ms`)
             })
-        }, 2000)
+        }
+
+        updatePing();
+        const interval = setInterval(updatePing, 2000);
 
         //Close the socket on decoupling
-        return () => {
-            socket.close();
-            clearInterval(interval)
-        }   
+        return () => clearInterval(interval) 
     },[])
 
     return <>{ping}</>
