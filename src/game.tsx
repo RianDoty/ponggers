@@ -90,6 +90,16 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
     return () => cancelAnimationFrame(animateRef.current);
   }, [notes]);
 
+  function onNoteHit(note: number) {
+    const difference = Date.now() - note;
+    if (Math.abs(difference) < 200) {
+      upcomingNotesRef.current!.shift();
+      setVerdict(`${getVerdict(note)} (${Date.now() - note}ms)`);
+    } else setVerdict("miss");
+
+    ballhit1sfx.play()
+  }
+
   //Hit Registration
   useEffect(() => {
     function onKeyDown(ev: KeyboardEvent) {
@@ -98,11 +108,7 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
       const note = upcomingNotesRef.current?.[0];
       if (!note) return setVerdict("miss");
 
-      const difference = Date.now() - note;
-      if (Math.abs(difference) < 200) {
-        upcomingNotesRef.current!.shift();
-        setVerdict(`${getVerdict(note)} (${Date.now() - note}ms)`);
-      } else setVerdict("miss");
+      onNoteHit(note);
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -189,7 +195,7 @@ export default function Game() {
 
   return (
     <>
-      <Ping/>
+      <Ping />
       {gameStarted ? null : (
         <StartPopup isLoaded={musicLoaded} onConfirm={startGame} />
       )}
