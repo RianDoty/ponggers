@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
@@ -11,10 +11,30 @@ import ballhit2 from "/sounds/ballhit2.mp3";
 import "./styles/game.css";
 import Ping from "./ping";
 
-const rallymusic = new Audio(rally);
-const whistlesfx = new Audio(whistle);
-const ballhit1sfx = new Audio(ballhit1);
-const ballhit2sfx = new Audio(ballhit2);
+// Load audio
+const rallymusicdata = new Audio(rally);
+rallymusicdata.volume = 0.25;
+const bpm = 182;
+const beat = (n: number) => (n * 60 * 1000) / bpm;
+const measure = (n: number) => beat(n * 4);
+
+const whistlesfxdata = new Audio(whistle);
+const ballhit1sfxdata = new Audio(ballhit1);
+const ballhit2sfxdata = new Audio(ballhit2);
+
+// Load audio context
+const audioContext = new AudioContext();
+
+function convertToContext(audio: HTMLAudioElement) {
+  const contextAudio = audioContext.createMediaElementSource(audio);
+  contextAudio.connect(audioContext.destination);
+  return contextAudio;
+}
+
+const rallymusic = convertToContext(rallymusicdata);
+const whistlesfx = convertToContext(whistlesfxdata);
+const ballhit1sfx = convertToContext(ballhit1sfxdata);
+const ballhit2sfx = convertToContext(ballhit2sfxdata);
 
 /** Returns true when two arrays contain equal data in the same order. */
 const arraysEqual = (a: any[], b: any[]) => {
@@ -30,7 +50,7 @@ const noteOffset = 662;
 const greatHitOffset = 20;
 
 /** @returns [renderAbove, renderBelow] */
-const getNoteWindow = () => [Date.now() - 50, Date.now() + noteOffset + 50];
+const getNoteWindow = (now: number) => [now - 50, now + noteOffset + 50];
 function getVerdict(noteTimestamp: number) {
   /** (ms) positive = late, negative = early */
   const difference = Date.now() - noteTimestamp;
@@ -47,17 +67,47 @@ const Note = ({ pos }: { pos: number }) => (
   <div className="note" style={{ left: `${(1 - pos) * 100}%` }} />
 );
 
-function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
+class Song {
+  startTime: number;
+  whistleTime: number;
+  audio: HTMLAudioElement;
+  notes: number[];
+
+  constructor({
+    whistle,
+    notes,
+    audio
+  }: {
+    whistle: number;
+    notes: number[];
+    audio: HTMLAudioElement;
+  }) {
+    this.notes = notes;
+    this.audio = audio;
+    this.whistleTime = whistle;
+    this.startTime = -99999999;
+  }
+
+  start() {
+    this.audio.play();
+    this.startTime = Date.now() - this.audio.currentTime;
+  }
+}
+
+function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
+  const notes = song.notes;
+
   const upcomingNotesRef = useRef<number[]>();
-  const [renderedNotes, setRenderedNotes] = useState<number[]>([]);
-  const [frame, setFrame] = useState(0);
+  const renderedNotes = useRef<number[]>([]);
+  const [_, setFrame] = useState(0);
   const animateRef = useRef<number>(0);
   const [verdict, setVerdict] = useState<string>();
 
-  function animate() {
+  const animate = useCallback(function localAnimate() {
     //Render notes that are within the window defined by noteOffset
     //+-50 to make sure the notes can slide in and out from the sides
-    const [renderAbove, renderBelow] = getNoteWindow();
+    const now = rallymusic.currentTime + song.startTime;
+    const [renderAbove, renderBelow] = getNoteWindow(now);
 
     const upcoming = upcomingNotesRef.current;
     //Render notes within the defined window
@@ -65,30 +115,31 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
       upcoming?.filter((t) => renderBelow > t && t > renderAbove) ?? [];
     //Remove notes that have already been fully played out
     upcomingNotesRef.current = upcoming?.filter((t) => {
-      const noteMissed = t < Date.now() - 200;
+      const noteMissed = t < now - 200;
       if (noteMissed) setVerdict("late");
       return !noteMissed;
     });
 
     let currentSize = 0;
-    setRenderedNotes((currentlyRendered) => {
-      if (!arraysEqual(currentlyRendered, toRender)) {
-        currentSize = toRender.length;
-        return toRender;
-      }
-      currentSize = currentlyRendered.length;
-      return currentlyRendered;
-    });
+    if (!arraysEqual(renderedNotes.current, toRender)) {
+      currentSize = toRender.length;
+      renderedNotes.current = toRender;
+    } else currentSize = renderedNotes.current.length;
 
+    //Refresh component if there are rendered notes
     if (currentSize > 0) setFrame((f) => f + 1);
-    animateRef.current = requestAnimationFrame(animate);
-  }
 
+    animateRef.current = requestAnimationFrame(localAnimate);
+  }, []);
+
+  // Start animating
   useEffect(() => {
+    console.log("Refreshing animate loop");
+
     upcomingNotesRef.current = [...notes]; //No side effects
     animateRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animateRef.current);
-  }, [notes]);
+  }, [notes, animate]);
 
   function onNoteHit(note: number) {
     const difference = Date.now() - note;
@@ -97,7 +148,16 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
       setVerdict(`${getVerdict(note)} (${Date.now() - note}ms)`);
     } else setVerdict("miss");
 
-    ballhit1sfx.play()
+    ballhit1sfx.play();
+
+    function play(audio: HTMLAudioElement) {
+      const newAudio = audio.cloneNode(false) as HTMLAudioElement;
+      newAudio.play();
+    }
+
+    setTimeout(() => play(ballhit2sfx), 1326 / 4);
+    setTimeout(() => play(ballhit1sfx), 1326 / 2);
+    setTimeout(() => play(ballhit2sfx), (1326 * 3) / 4);
   }
 
   //Hit Registration
@@ -115,7 +175,7 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const noteComponents = renderedNotes.map((nTime) => {
+  const noteComponents = renderedNotes.current.map((nTime) => {
     const pos = (Date.now() - nTime + noteOffset + greatHitOffset) / noteOffset;
     return <Note pos={pos} key={nTime} />;
   });
@@ -138,8 +198,18 @@ function HitBar({ flip, notes = [] }: { flip?: boolean; notes: number[] }) {
 function GameVisual() {
   return (
     <div>
-      <img src={pingPongMan} id="man1" alt="man playing ping pong" draggable={false} />
-      <img src={pingPongMan} id="man2" alt="man playing ping pong" draggable={false} />
+      <img
+        src={pingPongMan}
+        id="man1"
+        alt="man playing ping pong"
+        draggable={false}
+      />
+      <img
+        src={pingPongMan}
+        id="man2"
+        alt="man playing ping pong"
+        draggable={false}
+      />
       <img src={table} id="table" alt="ping pong table" draggable={false} />
     </div>
   );
@@ -168,6 +238,20 @@ function StartPopup({
 export default function Game() {
   const [gameStarted, setGameStarted] = useState(false);
   const [musicLoaded, setMusicLoaded] = useState(false);
+  const songRef = useRef<Song>(
+    new Song({
+      audio: rallymusic,
+      whistle: 0,
+      notes: (() => {
+        const note = (i: number) => Date.now() + 1315.6 * i;
+        const out: number[] = [];
+        for (let i = 3; i < 20 + 3; i++) {
+          out.push(note(i));
+        }
+        return out;
+      })()
+    })
+  );
 
   //Music loading
   useEffect(() => {
@@ -179,19 +263,10 @@ export default function Game() {
   const startGame: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     if (gameStarted) return;
 
-    //thisisneat
+    songRef.current.start();
 
     setGameStarted(true);
   };
-
-  const note = (i: number) => Date.now() + 1326 * i;
-  const [debugNotes] = useState(() => {
-    const out: number[] = [];
-    for (let i = 1; i < 100; i++) {
-      out.push(note(i));
-    }
-    return out;
-  });
 
   return (
     <>
@@ -201,7 +276,7 @@ export default function Game() {
       )}
       <div id="game">
         <GameVisual />
-        <HitBar notes={debugNotes} />
+        <HitBar song={songRef.current} />
       </div>
     </>
   );
