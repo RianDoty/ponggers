@@ -5,7 +5,8 @@ class Match {
     constructor(sockets) {
         this.sockets = sockets;
         this.id = (0, uuid_1.v4)() /* TODO: remove this once servers are working well */.substring(0, 5);
-        sockets.forEach(s => s.join(this.id));
+        //Join each socket to this room
+        sockets.forEach((s) => s.join(this.id));
     }
     start() {
     }

@@ -11,7 +11,6 @@ import ballhit2 from "/sounds/ballhit2.mp3";
 import "./styles/game.css";
 import Ping from "./ping";
 
-// Load audio
 const rallymusicdata = new Audio(rally);
 rallymusicdata.volume = 0.25;
 const bpm = 182;
@@ -32,9 +31,16 @@ function convertToContext(audio: HTMLAudioElement) {
 }
 
 const rallymusic = convertToContext(rallymusicdata);
-const whistlesfx = convertToContext(whistlesfxdata);
-const ballhit1sfx = convertToContext(ballhit1sfxdata);
-const ballhit2sfx = convertToContext(ballhit2sfxdata);
+
+async function buffer(audioLink: string) {
+  const audioBuffer = await (await fetch(audioLink)).arrayBuffer()
+  const audioData = await audioContext.decodeAudioData(audioBuffer)
+
+  const node = audioContext.createBufferSource()
+  node.buffer = audioData
+
+  return node
+}
 
 /** Returns true when two arrays contain equal data in the same order. */
 const arraysEqual = (a: any[], b: any[]) => {

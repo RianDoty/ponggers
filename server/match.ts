@@ -9,7 +9,8 @@ export default class Match {
         this.sockets = sockets;
         this.id = uuid()/* TODO: remove this once servers are working well */.substring(0,5) 
 
-        sockets.forEach(s => s.join(this.id))
+        //Join each socket to this room
+        sockets.forEach((s: Socket) => s.join(this.id))
     }
 
     start() {
