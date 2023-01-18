@@ -17,9 +17,9 @@ const bpm = 182;
 const beat = (n: number) => (n * 60 * 1000) / bpm;
 const measure = (n: number) => beat(n * 4);
 
-const whistlesfxdata = new Audio(whistle);
-const ballhit1sfxdata = new Audio(ballhit1);
-const ballhit2sfxdata = new Audio(ballhit2);
+let whistlesfxdata: AudioBuffer;
+let ballhit1sfxdata: AudioBuffer;
+let ballhit2sfxdata: AudioBuffer;
 
 // Load audio context
 const audioContext = new AudioContext();
@@ -30,16 +30,21 @@ function convertToContext(audio: HTMLAudioElement) {
   return contextAudio;
 }
 
-const rallymusic = convertToContext(rallymusicdata);
+convertToContext(rallymusicdata);
 
-async function buffer(audioLink: string) {
-  const audioBuffer = await (await fetch(audioLink)).arrayBuffer()
-  const audioData = await audioContext.decodeAudioData(audioBuffer)
+async function getBuffer(audioLink: string) {
+  //Request audio data from server
+  const audioBuffer = await (await fetch(audioLink)).arrayBuffer();
+  const audioData = await audioContext.decodeAudioData(audioBuffer);
 
-  const node = audioContext.createBufferSource()
-  node.buffer = audioData
+  return audioData;
+}
 
-  return node
+function playBuffer(buffer: AudioBuffer, time?: number) {
+  const node = audioContext.createBufferSource();
+  node.buffer = buffer;
+  node.connect(audioContext.destination);
+  node.start(time);
 }
 
 /** Returns true when two arrays contain equal data in the same order. */
@@ -58,8 +63,9 @@ const greatHitOffset = 20;
 /** @returns [renderAbove, renderBelow] */
 const getNoteWindow = (now: number) => [now - 50, now + noteOffset + 50];
 function getVerdict(noteTimestamp: number) {
-  /** (ms) positive = late, negative = early */
-  const difference = Date.now() - noteTimestamp;
+  /** in ms. positive = late, negative = early */
+  const now = rallymusicdata.currentTime * 1000;
+  const difference = now - noteTimestamp;
   console.log(`${Math.abs(difference)}ms ${difference > 0 ? "late" : "early"}`);
 
   if (Math.abs(difference) <= 50) return "great" as const;
@@ -112,7 +118,7 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
   const animate = useCallback(function localAnimate() {
     //Render notes that are within the window defined by noteOffset
     //+-50 to make sure the notes can slide in and out from the sides
-    const now = rallymusic.currentTime + song.startTime;
+    const now = rallymusicdata.currentTime * 1000;
     const [renderAbove, renderBelow] = getNoteWindow(now);
 
     const upcoming = upcomingNotesRef.current;
@@ -148,22 +154,22 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
   }, [notes, animate]);
 
   function onNoteHit(note: number) {
-    const difference = Date.now() - note;
+    const now = rallymusicdata.currentTime * 1000;
+    const difference = now - note;
+
+    //Notes hit if they aren't more than 200ms off
     if (Math.abs(difference) < 200) {
       upcomingNotesRef.current!.shift();
-      setVerdict(`${getVerdict(note)} (${Date.now() - note}ms)`);
+      console.log(`${now}, ${note}`);
+      setVerdict(`${getVerdict(note)} (${now - note}ms)`);
     } else setVerdict("miss");
 
-    ballhit1sfx.play();
-
-    function play(audio: HTMLAudioElement) {
-      const newAudio = audio.cloneNode(false) as HTMLAudioElement;
-      newAudio.play();
-    }
-
-    setTimeout(() => play(ballhit2sfx), 1326 / 4);
-    setTimeout(() => play(ballhit1sfx), 1326 / 2);
-    setTimeout(() => play(ballhit2sfx), (1326 * 3) / 4);
+    //TODO: remove second half of sounds,
+    //replace with multiplayer
+    playBuffer(ballhit1sfxdata);
+    playBuffer(ballhit2sfxdata, song.startTime + now + beat(1));
+    playBuffer(ballhit1sfxdata, song.startTime + now + beat(2));
+    playBuffer(ballhit2sfxdata, song.startTime + now + beat(3));
   }
 
   //Hit Registration
@@ -181,8 +187,9 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  const now = rallymusicdata.currentTime * 1000;
   const noteComponents = renderedNotes.current.map((nTime) => {
-    const pos = (Date.now() - nTime + noteOffset + greatHitOffset) / noteOffset;
+    const pos = (now - nTime + noteOffset + greatHitOffset) / noteOffset;
     return <Note pos={pos} key={nTime} />;
   });
 
@@ -246,13 +253,12 @@ export default function Game() {
   const [musicLoaded, setMusicLoaded] = useState(false);
   const songRef = useRef<Song>(
     new Song({
-      audio: rallymusic,
+      audio: rallymusicdata,
       whistle: 0,
       notes: (() => {
-        const note = (i: number) => Date.now() + 1315.6 * i;
         const out: number[] = [];
-        for (let i = 3; i < 20 + 3; i++) {
-          out.push(note(i));
+        for (let i = 3; i < 40 + 3; i++) {
+          out.push(measure(i) + beat(1));
         }
         return out;
       })()
@@ -261,15 +267,29 @@ export default function Game() {
 
   //Music loading
   useEffect(() => {
-    if (rallymusic.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
+    if (rallymusicdata.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
       return setMusicLoaded(true);
-    rallymusic.oncanplaythrough = () => setMusicLoaded(true);
+
+    const sfxload = new Promise<void>(async (r) => {
+      ballhit1sfxdata = await getBuffer(ballhit1);
+      ballhit2sfxdata = await getBuffer(ballhit2);
+
+      r();
+    });
+
+    //Wait for sound effects and music to load
+    rallymusicdata.oncanplaythrough = async () => {
+      await sfxload;
+      setMusicLoaded(true);
+    };
   }, []);
 
   const startGame: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     if (gameStarted) return;
 
+    audioContext.resume();
     songRef.current.start();
+    console.log("Starting game");
 
     setGameStarted(true);
   };
