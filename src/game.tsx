@@ -40,11 +40,21 @@ async function getBuffer(audioLink: string) {
   return audioData;
 }
 
-function playBuffer(buffer: AudioBuffer, time?: number) {
+function playBuffer(
+  buffer: AudioBuffer,
+  time: number = 0,
+  connectTo?: AudioNode
+) {
   const node = audioContext.createBufferSource();
   node.buffer = buffer;
+  node.connect(connectTo ?? audioContext.destination);
+  node.start(time / 1000);
+}
+
+function panNode(pan: number) {
+  const node = new StereoPannerNode(audioContext, { pan });
   node.connect(audioContext.destination);
-  node.start(time);
+  return node;
 }
 
 /** Returns true when two arrays contain equal data in the same order. */
@@ -103,6 +113,11 @@ class Song {
   start() {
     this.audio.play();
     this.startTime = Date.now() - this.audio.currentTime;
+  }
+
+  roundToBeat(n: number) {
+    const offset = this.startTime % beat(1);
+    return Math.floor((n - offset) / beat(1)) * beat(1) + offset;
   }
 }
 
@@ -166,10 +181,11 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
 
     //TODO: remove second half of sounds,
     //replace with multiplayer
-    playBuffer(ballhit1sfxdata);
-    playBuffer(ballhit2sfxdata, song.startTime + now + beat(1));
-    playBuffer(ballhit1sfxdata, song.startTime + now + beat(2));
-    playBuffer(ballhit2sfxdata, song.startTime + now + beat(3));
+    const contextTime = audioContext.currentTime * 1000;
+    playBuffer(ballhit1sfxdata, contextTime, panNode(-0.5));
+    playBuffer(ballhit2sfxdata, contextTime + beat(1), panNode(0.25));
+    playBuffer(ballhit1sfxdata, contextTime + beat(2), panNode(0.5));
+    playBuffer(ballhit2sfxdata, contextTime + beat(3), panNode(-0.25));
   }
 
   //Hit Registration
