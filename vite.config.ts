@@ -7,6 +7,9 @@ export default defineConfig({
   build: {
     outDir: "build"
   },
+  test: {
+    reporters: 'verbose'
+  },
   server: {
     strictPort: true,
     port: 3000,
