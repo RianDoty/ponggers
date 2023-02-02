@@ -128,7 +128,6 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
   const renderedNotes = useRef<number[]>([]);
   const [_, setFrame] = useState(0);
   const animateRef = useRef<number>(0);
-  const [verdict, setVerdict] = useState<string>();
 
   const animate = useCallback(function localAnimate() {
     //Render notes that are within the window defined by noteOffset
@@ -143,7 +142,6 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
     //Remove notes that have already been fully played out
     upcomingNotesRef.current = upcoming?.filter((t) => {
       const noteMissed = t < now - 200;
-      if (noteMissed) setVerdict("late");
       return !noteMissed;
     });
 
@@ -168,41 +166,6 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
     return () => cancelAnimationFrame(animateRef.current);
   }, [notes, animate]);
 
-  function onNoteHit(note: number) {
-    const now = rallymusicdata.currentTime * 1000;
-    const difference = now - note;
-
-    //Notes hit if they aren't more than 200ms off
-    if (Math.abs(difference) < 200) {
-      upcomingNotesRef.current!.shift();
-      console.log(`${now}, ${note}`);
-      setVerdict(`${getVerdict(note)} (${now - note}ms)`);
-    } else setVerdict("miss");
-
-    //TODO: remove second half of sounds,
-    //replace with multiplayer
-    const contextTime = audioContext.currentTime * 1000;
-    playBuffer(ballhit1sfxdata, contextTime, panNode(-0.5));
-    playBuffer(ballhit2sfxdata, contextTime + beat(1), panNode(0.25));
-    playBuffer(ballhit1sfxdata, contextTime + beat(2), panNode(0.5));
-    playBuffer(ballhit2sfxdata, contextTime + beat(3), panNode(-0.25));
-  }
-
-  //Hit Registration
-  useEffect(() => {
-    function onKeyDown(ev: KeyboardEvent) {
-      if (ev.repeat) return;
-
-      const note = upcomingNotesRef.current?.[0];
-      if (!note) return setVerdict("miss");
-
-      onNoteHit(note);
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
   const now = rallymusicdata.currentTime * 1000;
   const noteComponents = renderedNotes.current.map((nTime) => {
     const pos = (now - nTime + noteOffset + greatHitOffset) / noteOffset;
@@ -211,15 +174,12 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
 
   const divClass = `hit-bar${flip ? " flipped" : ""}` as const;
   return (
-    <>
-      {verdict}
-      <div className={divClass}>
-        <div className="hit-bar-green" />
-        <div className="hit-bar-yellow" />
-        <div className="hit-bar-red" />
-        {noteComponents}
-      </div>
-    </>
+    <div className={divClass}>
+      <div className="hit-bar-green" />
+      <div className="hit-bar-yellow" />
+      <div className="hit-bar-red" />
+      {noteComponents}
+    </div>
   );
 }
 
@@ -267,6 +227,7 @@ function StartPopup({
 export default function Game() {
   const [gameStarted, setGameStarted] = useState(false);
   const [musicLoaded, setMusicLoaded] = useState(false);
+
   const songRef = useRef<Song>(
     new Song({
       audio: rallymusicdata,
@@ -280,6 +241,9 @@ export default function Game() {
       })()
     })
   );
+  const upcomingNotesRef = useRef<number[]>([...songRef.current.notes]);
+
+  const [verdict, setVerdict] = useState('')
 
   //Music loading
   useEffect(() => {
@@ -310,6 +274,42 @@ export default function Game() {
     setGameStarted(true);
   };
 
+  function onNoteHit(note: number) {
+    const now = rallymusicdata.currentTime * 1000;
+    const difference = now - note;
+
+    //Notes hit if they aren't more than 200ms off
+    if (Math.abs(difference) < 200) {
+      upcomingNotesRef.current!.shift();
+      console.log(`${now}, ${note}`);
+      setVerdict(`${getVerdict(note)} (${now - note}ms)`);
+    } else setVerdict("miss");
+
+    //TODO: remove second half of sounds,
+    //replace with multiplayer
+    console.log('Playing hit sounds')
+    const contextTime = audioContext.currentTime * 1000;
+    playBuffer(ballhit1sfxdata, contextTime, panNode(-0.5));
+    playBuffer(ballhit2sfxdata, contextTime + beat(1), panNode(0.25));
+    playBuffer(ballhit1sfxdata, contextTime + beat(2), panNode(0.5));
+    playBuffer(ballhit2sfxdata, contextTime + beat(3), panNode(-0.25));
+  }
+
+  //Hit Registration
+  useEffect(() => {
+    function onKeyDown(ev: KeyboardEvent) {
+      if (ev.repeat) return;
+
+      const note = upcomingNotesRef.current?.[0];
+      if (!note) return setVerdict("miss");
+
+      onNoteHit(note);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <>
       <Ping />
@@ -317,6 +317,7 @@ export default function Game() {
         <StartPopup isLoaded={musicLoaded} onConfirm={startGame} />
       )}
       <div id="game">
+        {verdict}
         <GameVisual />
         <HitBar song={songRef.current} />
       </div>
