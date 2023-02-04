@@ -13,6 +13,7 @@ export default class SFXNode {
     this.audioLink = audioLink;
     this.connectedTo = audioContext.destination;
 
+    //I would make auto-loading optional but i have zero idea how
     this.onLoad = this.load();
   }
 

@@ -230,17 +230,14 @@ export default function Game() {
   useEffect(() => {
     if (rallymusicdata.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
       return setMusicLoaded(true);
-
-    const sfxload = new Promise<void>(async (r) => {
-      ballhit1sfxdata = await getBuffer(ballhit1);
-      ballhit2sfxdata = await getBuffer(ballhit2);
-
-      r();
-    });
-
+      
     //Wait for sound effects and music to load
     rallymusicdata.oncanplaythrough = async () => {
-      await sfxload;
+      await Promise.all([
+      whistle.onLoad,
+      ballhit1.onLoad,
+      ballhit2.onLoad,
+    ]);
       setMusicLoaded(true);
     };
   }, []);
@@ -263,17 +260,16 @@ export default function Game() {
     if (Math.abs(difference) < 200) {
       upcomingNotesRef.current!.shift();
       console.log(`${now}, ${note}`);
+      
       setVerdict(`${getVerdict(note)} (${now - note}ms)`);
     } else setVerdict("miss");
 
     //TODO: remove second half of sounds,
     //replace with multiplayer
-    console.log("Playing hit sounds");
-    const contextTime = audioContext.currentTime * 1000;
-    playBuffer(ballhit1sfxdata, contextTime, panNode(-0.5));
-    playBuffer(ballhit2sfxdata, contextTime + beat(1), panNode(0.25));
-    playBuffer(ballhit1sfxdata, contextTime + beat(2), panNode(0.5));
-    playBuffer(ballhit2sfxdata, contextTime + beat(3), panNode(-0.25));
+    ballhit1.play(0, panNode(-0.5));
+    ballhit2.play(beat(1), panNode(0.25));
+    ballhit1.play(beat(2), panNode(0.5));
+    ballhit2.play(beat(3), panNode(-0.25));
   }
 
   //Hit Registration
