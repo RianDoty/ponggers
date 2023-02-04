@@ -3,53 +3,34 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
 
-import rally from "/sounds/rally.mp3";
-import whistle from "/sounds/whistle.mp3";
-import ballhit1 from "/sounds/ballhit1.mp3";
-import ballhit2 from "/sounds/ballhit2.mp3";
+import rallyLink from "/sounds/rally.mp3";
+import whistleLink from "/sounds/whistle.mp3";
+import ballhit1Link from "/sounds/ballhit1.mp3";
+import ballhit2Link from "/sounds/ballhit2.mp3";
+
+import SFXNode from "./sfx";
 
 import "./styles/game.css";
 import Ping from "./ping";
 
-const rallymusicdata = new Audio(rally);
+// Load audio context
+const audioContext = new AudioContext();
+
+const rallymusicdata = new Audio(rallyLink);
+
+//Make the rally music play through the audio context
+audioContext
+  .createMediaElementSource(rallymusicdata)
+  .connect(audioContext.destination);
+
 rallymusicdata.volume = 0.25;
 const bpm = 182;
 const beat = (n: number) => (n * 60 * 1000) / bpm;
 const measure = (n: number) => beat(n * 4);
 
-let whistlesfxdata: AudioBuffer;
-let ballhit1sfxdata: AudioBuffer;
-let ballhit2sfxdata: AudioBuffer;
-
-// Load audio context
-const audioContext = new AudioContext();
-
-function convertToContext(audio: HTMLAudioElement) {
-  const contextAudio = audioContext.createMediaElementSource(audio);
-  contextAudio.connect(audioContext.destination);
-  return contextAudio;
-}
-
-convertToContext(rallymusicdata);
-
-async function getBuffer(audioLink: string) {
-  //Request audio data from server
-  const audioBuffer = await (await fetch(audioLink)).arrayBuffer();
-  const audioData = await audioContext.decodeAudioData(audioBuffer);
-
-  return audioData;
-}
-
-function playBuffer(
-  buffer: AudioBuffer,
-  time: number = 0,
-  connectTo?: AudioNode
-) {
-  const node = audioContext.createBufferSource();
-  node.buffer = buffer;
-  node.connect(connectTo ?? audioContext.destination);
-  node.start(time / 1000);
-}
+const whistle = new SFXNode(audioContext, whistleLink);
+const ballhit1 = new SFXNode(audioContext, ballhit1Link);
+const ballhit2 = new SFXNode(audioContext, ballhit2Link);
 
 function panNode(pan: number) {
   const node = new StereoPannerNode(audioContext, { pan });
@@ -98,7 +79,7 @@ class Song {
   constructor({
     whistle,
     notes,
-    audio
+    audio,
   }: {
     whistle: number;
     notes: number[];
@@ -206,7 +187,7 @@ function GameVisual() {
 
 function StartPopup({
   isLoaded,
-  onConfirm
+  onConfirm,
 }: {
   isLoaded: boolean;
   onConfirm: React.MouseEventHandler<HTMLButtonElement>;
@@ -238,28 +219,25 @@ export default function Game() {
           out.push(measure(i) + beat(1));
         }
         return out;
-      })()
+      })(),
     })
   );
   const upcomingNotesRef = useRef<number[]>([...songRef.current.notes]);
 
-  const [verdict, setVerdict] = useState('')
+  const [verdict, setVerdict] = useState("");
 
   //Music loading
   useEffect(() => {
     if (rallymusicdata.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
       return setMusicLoaded(true);
-
-    const sfxload = new Promise<void>(async (r) => {
-      ballhit1sfxdata = await getBuffer(ballhit1);
-      ballhit2sfxdata = await getBuffer(ballhit2);
-
-      r();
-    });
-
+      
     //Wait for sound effects and music to load
     rallymusicdata.oncanplaythrough = async () => {
-      await sfxload;
+      await Promise.all([
+      whistle.onLoad,
+      ballhit1.onLoad,
+      ballhit2.onLoad,
+    ]);
       setMusicLoaded(true);
     };
   }, []);
@@ -282,17 +260,16 @@ export default function Game() {
     if (Math.abs(difference) < 200) {
       upcomingNotesRef.current!.shift();
       console.log(`${now}, ${note}`);
+      
       setVerdict(`${getVerdict(note)} (${now - note}ms)`);
     } else setVerdict("miss");
 
     //TODO: remove second half of sounds,
     //replace with multiplayer
-    console.log('Playing hit sounds')
-    const contextTime = audioContext.currentTime * 1000;
-    playBuffer(ballhit1sfxdata, contextTime, panNode(-0.5));
-    playBuffer(ballhit2sfxdata, contextTime + beat(1), panNode(0.25));
-    playBuffer(ballhit1sfxdata, contextTime + beat(2), panNode(0.5));
-    playBuffer(ballhit2sfxdata, contextTime + beat(3), panNode(-0.25));
+    ballhit1.play(0, panNode(-0.5));
+    ballhit2.play(beat(1), panNode(0.25));
+    ballhit1.play(beat(2), panNode(0.5));
+    ballhit2.play(beat(3), panNode(-0.25));
   }
 
   //Hit Registration

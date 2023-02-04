@@ -1,47 +1,45 @@
-import rally from "/sounds/rally.mp3";
-import whistle from "/sounds/whistle.mp3";
-import ballhit1 from "/sounds/ballhit1.mp3";
-import ballhit2 from "/sounds/ballhit2.mp3";
-
-export class SFX {
+export default class SFXNode {
   audioContext: AudioContext;
   buffer: AudioBuffer;
   loaded: boolean;
+  audioLink: string;
+  connectedTo: AudioNode;
+  onLoad: Promise<AudioBuffer>;
 
-  constructor(audioContext: AudioContext) {
+  constructor(audioContext: AudioContext, audioLink: string) {
     this.audioContext = audioContext;
     this.loaded = false;
-  }
 
-  setBuffer(buffer: AudioBuffer) {
-    
+    this.audioLink = audioLink;
+    this.connectedTo = audioContext.destination;
+
+    //I would make auto-loading optional but i have zero idea how
+    this.onLoad = this.load();
   }
 
   play(offset: number, connectTo?: AudioNode) {
     if (!this.buffer) throw Error("Sound effect is not loaded!");
     const node = this.audioContext.createBufferSource();
     node.buffer = this.buffer;
-    node.connect(connectTo ?? this.audioContext.destination);
+    node.connect(connectTo ?? this.connectedTo);
     node.start(offset / 1000 + this.audioContext.currentTime);
   }
-}
 
-export class SFXLoader {
-  audioContext: AudioContext;
-  cache: Map<string, AudioBuffer>;
+  connect(node: AudioNode) {
+    if (!node) throw Error(`Cannot connect SFXNode to nothing!`);
+    this.connectedTo = node;
 
-  constructor(audioContext: AudioContext) {
-    this.audioContext = audioContext;
+    return this;
   }
 
-  load(audioLink: string) {
-    const sfx = new SFX(this.audioContext)
-    
-    fetch(audioLink)
-      .then(r => r.arrayBuffer())
-      .then(b => this.audioContext.decodeAudioData(b))
-      .then(audioBuffer => sfx.setBuffer(audioBuffer))
-    
-    return sfx
+  async load() {
+    const audioBuffer = await fetch(this.audioLink)
+      .then((r) => r.arrayBuffer())
+      .then((b) => this.audioContext.decodeAudioData(b));
+
+    this.buffer = audioBuffer;
+    this.loaded = true;
+
+    return audioBuffer;
   }
 }
