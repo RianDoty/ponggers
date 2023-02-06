@@ -70,38 +70,6 @@ const Note = ({ pos }: { pos: number }) => (
   <div className="note" style={{ left: `${(1 - pos) * 100}%` }} />
 );
 
-class Song {
-  startTime: number;
-  whistleTime: number;
-  audio: HTMLAudioElement;
-  notes: number[];
-
-  constructor({
-    whistle,
-    notes,
-    audio,
-  }: {
-    whistle: number;
-    notes: number[];
-    audio: HTMLAudioElement;
-  }) {
-    this.notes = notes;
-    this.audio = audio;
-    this.whistleTime = whistle;
-    this.startTime = -99999999;
-  }
-
-  start() {
-    this.audio.play();
-    this.startTime = Date.now() - this.audio.currentTime;
-  }
-
-  roundToBeat(n: number) {
-    const offset = this.startTime % beat(1);
-    return Math.floor((n - offset) / beat(1)) * beat(1) + offset;
-  }
-}
-
 function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
   const notes = song.notes;
 

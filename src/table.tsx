@@ -1,14 +1,19 @@
-import react, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 
 const setInterval = window.setInterval;
 
-function Table() {
-  const step = useCallback(function (t) {}, []);
+function Ball() {
+  return (
+    <div className="ball"/>
+  )
+} 
 
-  useEffect(() => {
-    const handle = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(handle);
-  }, [step]);
+function Table() {
+  return (
+    <div className="table">
+      <Ball/>
+    </div>
+  )
 }
 
 export default Table;
