@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Song } from "./songs";
 
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
@@ -198,14 +199,10 @@ export default function Game() {
   useEffect(() => {
     if (rallymusicdata.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
       return setMusicLoaded(true);
-      
+
     //Wait for sound effects and music to load
     rallymusicdata.oncanplaythrough = async () => {
-      await Promise.all([
-      whistle.onLoad,
-      ballhit1.onLoad,
-      ballhit2.onLoad,
-    ]);
+      await Promise.all([whistle.onLoad, ballhit1.onLoad, ballhit2.onLoad]);
       setMusicLoaded(true);
     };
   }, []);
@@ -228,7 +225,7 @@ export default function Game() {
     if (Math.abs(difference) < 200) {
       upcomingNotesRef.current!.shift();
       console.log(`${now}, ${note}`);
-      
+
       setVerdict(`${getVerdict(note)} (${now - note}ms)`);
     } else setVerdict("miss");
 

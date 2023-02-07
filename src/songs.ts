@@ -1,24 +1,27 @@
+import rally1 from "./rally1.json";
+
+rally1.
+
+type EventList = {type: string, length: number}[]
 export class Song {
   startTime: number;
   whistleTime: number;
-  audio: HTMLAudioElement;
+  audioLink: string;
   notes: number[];
-  bpm: number
-
+  bpm: number;
+  events: EventList
   constructor({
-    whistle,
-    notes,
-    audio,
+    length,
+    events,
     bpm
   }: {
-    whistle: number;
-    notes: number[];
-    audio: HTMLAudioElement;
-    bpm: number
-  }) {
-    this.notes = notes;
-    this.audio = audio;
-    this.bpm = bpm
+    bpm: number;
+    length: number;
+    events: EventList
+  }, audioLink: string) {
+    this.events = events;
+    this.audioLink = audioLink
+    this.bpm = bpm;
     this.whistleTime = this.beat(whistle);
     this.startTime = -99999999;
   }
@@ -28,7 +31,7 @@ export class Song {
   }
 
   measure(n: number) {
-    return (n * 4 * 60 * 1000) / this.bpm
+    return (n * 4 * 60 * 1000) / this.bpm;
   }
 
   start() {
@@ -37,10 +40,10 @@ export class Song {
   }
 
   roundToBeat(n: number) {
-    const beat = this.beat
+    const beat = this.beat;
     const offset = this.startTime % beat(1);
     return Math.floor((n - offset) / beat(1)) * beat(1) + offset;
   }
 }
 
-export const Rally1 = new Song({whistle: 2, notes})
+export const Rally1 = new Song(rally1);
