@@ -1,3 +1,102 @@
 {
-    
+  "bpm": 182,
+  "length": 83,
+  "events": [
+    {
+      "type": "long",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 3
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 3
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "nomal",
+      "length": 2
+    },
+    {
+      "type": "long",
+      "length": 2
+    },
+    {
+      "type": "normal",
+      "length": 7
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 3
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 7
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 3
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 1
+    },
+    {
+      "type": "long",
+      "length": 3
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 3
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 3
+    },
+    {
+      "type": "short",
+      "length": 1
+    },
+    {
+      "type": "normal",
+      "length": 2
+    },
+    {
+      "type": "long",
+      "length": 1
+    }
+  ]
 }
