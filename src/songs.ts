@@ -39,13 +39,14 @@ export class Song {
     // Notes are defined as offsets from 0 in ms,
     // 0 being whatever time the song starts
 
-    const notesOut = [];
-    const sfxOut = [];
-
     const songData = this.songData;
+    const notesOut: Notes = [];
+    const sfxOut: SFXList = [];
 
     const lengthInBeats = (songData.length / 60) * this.bpm;
-    for (let i = 1; lengthInBeats; i++) {}
+    for (let i = 1; i < lengthInBeats/4; i++) {
+      notesOut.push(this.measure(i))
+    }
 
     return { notes: notesOut, sfx: sfxOut };
   }
