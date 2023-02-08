@@ -1,34 +1,24 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Song } from "./songs";
-
+import { Song, SongLoader } from "./songs";
 import pingPongMan from "/images/pongman.png";
 import table from "/images/table.png";
-
-import rallyLink from "/sounds/rally.mp3";
+import rally1Data from "./rally1.json";
+import rally1AudioLink from "/sounds/rally.mp3";
 import whistleLink from "/sounds/whistle.mp3";
 import ballhit1Link from "/sounds/ballhit1.mp3";
 import ballhit2Link from "/sounds/ballhit2.mp3";
-
 import SFXNode from "./sfx";
-
 import "./styles/game.css";
 import Ping from "./ping";
+import { arraysEqual } from "./util";
 
 // Load audio context
 const audioContext = new AudioContext();
 
-const rallymusicdata = new Audio(rallyLink);
+const songLoader = new SongLoader(audioContext);
+const rally1 = songLoader.load(rally1Data, rally1AudioLink);
 
-//Make the rally music play through the audio context
-audioContext
-  .createMediaElementSource(rallymusicdata)
-  .connect(audioContext.destination);
-
-rallymusicdata.volume = 0.25;
-const bpm = 182;
-const beat = (n: number) => (n * 60 * 1000) / bpm;
-const measure = (n: number) => beat(n * 4);
-
+rally1.audio.volume = 0.25;
 const whistle = new SFXNode(audioContext, whistleLink);
 const ballhit1 = new SFXNode(audioContext, ballhit1Link);
 const ballhit2 = new SFXNode(audioContext, ballhit2Link);
@@ -39,15 +29,6 @@ function panNode(pan: number) {
   return node;
 }
 
-/** Returns true when two arrays contain equal data in the same order. */
-const arraysEqual = (a: any[], b: any[]) => {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-};
-
 /** Offset from note appearing to when it needs to be hit (ms) */
 const noteOffset = 662;
 const greatHitOffset = 20;
@@ -56,7 +37,7 @@ const greatHitOffset = 20;
 const getNoteWindow = (now: number) => [now - 50, now + noteOffset + 50];
 function getVerdict(noteTimestamp: number) {
   /** in ms. positive = late, negative = early */
-  const now = rallymusicdata.currentTime * 1000;
+  const now = rally1.audio.currentTime * 1000;
   const difference = now - noteTimestamp;
   console.log(`${Math.abs(difference)}ms ${difference > 0 ? "late" : "early"}`);
 
@@ -82,7 +63,7 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
   const animate = useCallback(function localAnimate() {
     //Render notes that are within the window defined by noteOffset
     //+-50 to make sure the notes can slide in and out from the sides
-    const now = rallymusicdata.currentTime * 1000;
+    const now = rally1.audio.currentTime * 1000;
     const [renderAbove, renderBelow] = getNoteWindow(now);
 
     const upcoming = upcomingNotesRef.current;
@@ -116,7 +97,7 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
     return () => cancelAnimationFrame(animateRef.current);
   }, [notes, animate]);
 
-  const now = rallymusicdata.currentTime * 1000;
+  const now = rally1.audio.currentTime * 1000;
   const noteComponents = renderedNotes.current.map((nTime) => {
     const pos = (now - nTime + noteOffset + greatHitOffset) / noteOffset;
     return <Note pos={pos} key={nTime} />;
@@ -178,30 +159,18 @@ export default function Game() {
   const [gameStarted, setGameStarted] = useState(false);
   const [musicLoaded, setMusicLoaded] = useState(false);
 
-  const songRef = useRef<Song>(
-    new Song({
-      audio: rallymusicdata,
-      whistle: 0,
-      notes: (() => {
-        const out: number[] = [];
-        for (let i = 3; i < 40 + 3; i++) {
-          out.push(measure(i) + beat(1));
-        }
-        return out;
-      })(),
-    })
-  );
+  const songRef = useRef<Song>(rally1);
   const upcomingNotesRef = useRef<number[]>([...songRef.current.notes]);
 
   const [verdict, setVerdict] = useState("");
 
   //Music loading
   useEffect(() => {
-    if (rallymusicdata.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
+    if (rally1.audio.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
       return setMusicLoaded(true);
 
     //Wait for sound effects and music to load
-    rallymusicdata.oncanplaythrough = async () => {
+    rally1.audio.oncanplaythrough = async () => {
       await Promise.all([whistle.onLoad, ballhit1.onLoad, ballhit2.onLoad]);
       setMusicLoaded(true);
     };
@@ -218,7 +187,7 @@ export default function Game() {
   };
 
   function onNoteHit(note: number) {
-    const now = rallymusicdata.currentTime * 1000;
+    const now = rally1.audio.currentTime * 1000;
     const difference = now - note;
 
     //Notes hit if they aren't more than 200ms off
@@ -231,6 +200,7 @@ export default function Game() {
 
     //TODO: remove second half of sounds,
     //replace with multiplayer
+    const beat = rally1.beat;
     ballhit1.play(0, panNode(-0.5));
     ballhit2.play(beat(1), panNode(0.25));
     ballhit1.play(beat(2), panNode(0.5));
