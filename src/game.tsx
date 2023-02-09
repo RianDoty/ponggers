@@ -166,6 +166,7 @@ export default function Game() {
 
   //Music loading
   useEffect(() => {
+    // Immediately cancel if the audio is already loaded
     if (rally1.audio.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA)
       return setMusicLoaded(true);
 
@@ -200,7 +201,7 @@ export default function Game() {
 
     //TODO: remove second half of sounds,
     //replace with multiplayer
-    const beat = rally1.beat;
+    const beat = rally1.beat.bind(rally1);
     ballhit1.play(0, panNode(-0.5));
     ballhit2.play(beat(1), panNode(0.25));
     ballhit1.play(beat(2), panNode(0.5));
