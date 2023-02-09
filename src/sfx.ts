@@ -17,12 +17,15 @@ export default class SFXNode {
     this.onLoad = this.load();
   }
 
-  play(offset: number, connectTo?: AudioNode) {
+  /**Plays a sound when the provided timestamp is reached, immediately if 0.
+   * IMPORTANT: [WHEN] IS ABSOLUTE, ADD THE CURRENT TIME OF AUDIO CONTEXT
+   */
+  play(when: number, connectTo?: AudioNode) {
     if (!this.buffer) throw Error("Sound effect is not loaded!");
     const node = this.audioContext.createBufferSource();
     node.buffer = this.buffer;
     node.connect(connectTo ?? this.connectedTo);
-    node.start(offset / 1000 + this.audioContext.currentTime);
+    node.start(when / 1000);
   }
 
   connect(node: AudioNode) {

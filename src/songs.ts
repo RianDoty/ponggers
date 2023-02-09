@@ -55,17 +55,22 @@ export class Song {
     return (n * 60 * 1000) / this.bpm;
   }
 
+  /**The current time of the song, in milliseconds. */ 
+  get time() {
+    return this.audio.currentTime * 1000
+  }
+
   measure(n: number) {
     return (n * 4 * 60 * 1000) / this.bpm;
   }
 
   start() {
     this.audio.play();
-    this.startTime = Date.now() - this.audio.currentTime;
+    this.startTime = Date.now() - this.audio.currentTime * 1000;
   }
 
   roundToBeat(n: number) {
-    const beat = this.beat;
+    const beat = this.beat.bind(this);
     return Math.floor(n / beat(1)) * beat(1);
   }
 }
