@@ -44,8 +44,8 @@ export class Song {
     const sfxOut: SFXList = [];
 
     const lengthInBeats = (songData.length / 60) * this.bpm;
-    for (let i = 1; i < lengthInBeats/4; i++) {
-      notesOut.push(this.measure(i))
+    for (let i = 1; i < lengthInBeats / 4; i++) {
+      notesOut.push(this.measure(i));
     }
 
     return { notes: notesOut, sfx: sfxOut };
@@ -66,8 +66,7 @@ export class Song {
 
   roundToBeat(n: number) {
     const beat = this.beat;
-    const offset = this.startTime % beat(1);
-    return Math.floor((n - offset) / beat(1)) * beat(1) + offset;
+    return Math.floor(n / beat(1)) * beat(1);
   }
 }
 
