@@ -37,7 +37,7 @@ const greatHitOffset = 20;
 const getNoteWindow = (now: number) => [now - 50, now + noteOffset + 50];
 function getVerdict(noteTimestamp: number) {
   /** in ms. positive = late, negative = early */
-  const now = rally1.audio.currentTime * 1000;
+  const now = rally1.time;
   const difference = now - noteTimestamp;
   console.log(`${Math.abs(difference)}ms ${difference > 0 ? "late" : "early"}`);
 
@@ -63,7 +63,7 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
   const animate = useCallback(function localAnimate() {
     //Render notes that are within the window defined by noteOffset
     //+-50 to make sure the notes can slide in and out from the sides
-    const now = rally1.audio.currentTime * 1000;
+    const now = rally1.time;
     const [renderAbove, renderBelow] = getNoteWindow(now);
 
     const upcoming = upcomingNotesRef.current;
@@ -97,7 +97,7 @@ function HitBar({ flip, song }: { flip?: boolean; song: Song }) {
     return () => cancelAnimationFrame(animateRef.current);
   }, [notes, animate]);
 
-  const now = rally1.audio.currentTime * 1000;
+  const now = rally1.time;
   const noteComponents = renderedNotes.current.map((nTime) => {
     const pos = (now - nTime + noteOffset + greatHitOffset) / noteOffset;
     return <Note pos={pos} key={nTime} />;
@@ -188,7 +188,7 @@ export default function Game() {
   };
 
   function onNoteHit(note: number) {
-    const now = rally1.audio.currentTime * 1000;
+    const now = rally1.time;
     const difference = now - note;
 
     //Notes hit if they aren't more than 200ms off
@@ -197,16 +197,16 @@ export default function Game() {
       console.log(`${now}, ${note}`);
 
       setVerdict(`${getVerdict(note)} (${now - note}ms)`);
-    } else setVerdict("miss");
 
-    //TODO: remove second half of sounds,
-    //replace with multiplayer
-    const nearestBeat = rally1.toContextTime(rally1.roundToBeat(rally1.time))
-    const beat = i => rally1.beat(i)
-    ballhit1.play(0, panNode(-0.5));
-    ballhit2.play(beat(1) + nearestBeat, panNode(0.25));
-    ballhit1.play(beat(2) + nearestBeat, panNode(0.5));
-    ballhit2.play(beat(3) + nearestBeat, panNode(-0.25));
+      //TODO: remove second half of sounds,
+      //replace with multiplayer
+      const nearestBeat = rally1.toContextTime(rally1.roundToBeat(rally1.time));
+      const beat = (i) => rally1.beat(i);
+      ballhit1.play(0, panNode(-0.5));
+      ballhit2.play(beat(1) + nearestBeat, panNode(0.25));
+      ballhit1.play(beat(2) + nearestBeat, panNode(0.5));
+      ballhit2.play(beat(3) + nearestBeat, panNode(-0.25));
+    } else setVerdict("miss");
   }
 
   //Hit Registration
@@ -223,6 +223,21 @@ export default function Game() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  //Misses
+  setInterval(() => {
+    const now = rally1.time;
+    const upcoming = upcomingNotesRef.current;
+    for (let i = 0; now > upcoming[i] && i < upcoming.length; i++) {
+      const thisNote = upcomingNotesRef.current[i];
+
+      if (thisNote + 100 < now) {
+        //The note is more than 100ms late to be pressed, count it as a miss.
+        upcoming.splice(i, 1);
+        setVerdict("miss");
+      }
+    }
+  });
 
   return (
     <>

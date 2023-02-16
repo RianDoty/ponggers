@@ -55,18 +55,17 @@ export class Song {
     const notesOut: Notes = [];
     const sfxOut: SFXList = [];
 
-    const lengthInBeats = (songData.length / 60) * this.bpm;
-    for (let i = 1; i < lengthInBeats / 4; i++) {
-      notesOut.push(this.measure(i));
-    }
+    let currentBeat = 0;
+    this.events.forEach(({ type, length }) => {});
 
     return { notes: notesOut, sfx: sfxOut };
   }
 
   toContextTime(songTime: number): number {
-    const difference = (this.audioContext.currentTime - this.audio.currentTime) * 1000
+    const difference =
+      (this.audioContext.currentTime - this.audio.currentTime) * 1000;
 
-    return songTime + difference
+    return songTime + difference;
   }
 
   /**Amount of ms in [n] quarter notes. */
@@ -91,7 +90,7 @@ export class Song {
 
   roundToBeat(n: number) {
     const beat = this.beat.bind(this);
-    return Math.floor(n / beat(1)) * beat(1);
+    return Math.round(n / beat(1)) * beat(1);
   }
 }
 
