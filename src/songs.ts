@@ -63,18 +63,24 @@ export class Song {
     return { notes: notesOut, sfx: sfxOut };
   }
 
+  toContextTime(songTime: number): number {
+    const difference = (this.audioContext.currentTime - this.audio.currentTime) * 1000
+
+    return songTime + difference
+  }
+
   /**Amount of ms in [n] quarter notes. */
-  beat(n: number) {
+  beat(n: number): number {
     return (n * 60 * 1000) / this.bpm;
   }
 
   /**The current time of the song, in milliseconds. */
-  get time() {
+  get time(): number {
     return this.audio.currentTime * 1000;
   }
 
   /**Gets the amount of time (ms) of (n) measures in the current tempo (4 beats).*/
-  measure(n: number) {
+  measure(n: number): number {
     return (n * 4 * 60 * 1000) / this.bpm;
   }
 
@@ -97,12 +103,6 @@ export class SongLoader {
   }
 
   load(songData: SongData, audioLink: string) {
-    const song = new Song(songData, audioLink);
-
-    this.audioContext
-      .createMediaElementSource(song.audio)
-      .connect(this.audioContext.destination);
-
-    return song;
+    return new Song(this.audioContext, songData, audioLink);
   }
 }

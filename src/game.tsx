@@ -201,7 +201,7 @@ export default function Game() {
 
     //TODO: remove second half of sounds,
     //replace with multiplayer
-    const nearestBeat = rally1.roundToBeat(rally1.time)
+    const nearestBeat = rally1.toContextTime(rally1.roundToBeat(rally1.time))
     const beat = i => rally1.beat(i)
     ballhit1.play(0, panNode(-0.5));
     ballhit2.play(beat(1) + nearestBeat, panNode(0.25));
