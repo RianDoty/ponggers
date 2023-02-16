@@ -16,14 +16,26 @@ export class Song {
 
   audioLink: string;
   audio: HTMLAudioElement;
+  audioContext: AudioContext;
   loaded: Promise<any>;
 
-  constructor(songData: SongData, audioLink: string) {
+  constructor(
+    audioContext: AudioContext,
+    songData: SongData,
+    audioLink: string
+  ) {
     this.songData = songData;
     this.bpm = songData.bpm;
 
     this.audioLink = audioLink;
+    this.audioContext = audioContext;
+
+    //Make and connect audio
     this.audio = new Audio(audioLink);
+    audioContext
+      .createMediaElementSource(this.audio)
+      .connect(audioContext.destination);
+
     this.startTime = -99999999;
 
     this.loaded = new Promise((r) => {
@@ -51,15 +63,17 @@ export class Song {
     return { notes: notesOut, sfx: sfxOut };
   }
 
+  /**Amount of ms in [n] quarter notes. */
   beat(n: number) {
     return (n * 60 * 1000) / this.bpm;
   }
 
-  /**The current time of the song, in milliseconds. */ 
+  /**The current time of the song, in milliseconds. */
   get time() {
-    return this.audio.currentTime * 1000
+    return this.audio.currentTime * 1000;
   }
 
+  /**Gets the amount of time (ms) of (n) measures in the current tempo (4 beats).*/
   measure(n: number) {
     return (n * 4 * 60 * 1000) / this.bpm;
   }
